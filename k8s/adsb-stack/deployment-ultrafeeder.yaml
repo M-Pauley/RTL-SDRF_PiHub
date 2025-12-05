@@ -1,0 +1,94 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ultrafeeder
+  labels:
+    app: ultrafeeder
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ultrafeeder
+  template:
+    metadata:
+      labels:
+        app: ultrafeeder
+      annotations:
+        # Example Prometheus scrape annotations (if you use annotations-based discovery)
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9274"
+    spec:
+      containers:
+        - name: ultrafeeder
+          # Multi-arch image maintained by SDR-Enthusiasts
+          image: ghcr.io/sdr-enthusiasts/docker-adsb-ultrafeeder:telegraf
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 80
+            - name: metrics-telegraf
+              containerPort: 9273
+            - name: metrics-readsb
+              containerPort: 9274
+            - name: beast-out
+              containerPort: 30005
+          env:
+            # Required basic config
+            - name: TZ
+              value: "America/Chicago"          # adjust if needed
+            - name: LAT
+              value: "41.0000"                  # your antenna lat
+            - name: LONG
+              value: "-88.0000"                 # your antenna lon
+            - name: ALT
+              value: "250m"                     # altitude with unit (m/ft)
+
+            # History retention for globe/timelapse data (days)
+            - name: MAX_GLOBE_HISTORY
+              value: "7"
+
+            # Connect to Pi readsb/dump1090 Beast output (ADS-B 1090ES)
+            # And (optionally) to dump978 service for UAT
+            # NOTE: replace 10.0.0.20 with your Pi's IP or DNS
+            - name: ULTRAFEEDER_CONFIG
+              value: >
+                adsb,rtl-sdrf.cyberpunkcity.org,30005,beast_in;
+                
+              # adsb,dump978,30978,uat_in
+              # Uncomment if/when UAT is added.
+
+            # If you want Ultrafeeder to feed external aggregators (adsb.fi, adsb.lol, etc),
+            # add extra "adsb,..." and "mlat,..." constructs to ULTRAFEEDER_CONFIG
+            # as per the docs.
+
+            # Example: enable extra logging level if debugging
+            # - name: LOGLEVEL
+            #   value: "verbose"
+
+            # If you later wire InfluxDBv2, you would add envs here for the
+            # Influx URL / org / bucket / token and mount them from a SOPS Secret.
+
+            # --- InfluxDB v2 wiring ---
+            - name: INFLUXDBV2_URL
+              value: "http://influxdb:8086"
+            - name: INFLUXDBV2_BUCKET
+              value: "ultrafeeder"
+            - name: INFLUXDBV2_ORG
+              value: "ultrafeeder"
+            - name: INFLUXDBV2_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: influxdb2-credentials
+                  key: INFLUXDB_ADMIN_TOKEN
+
+            # Optional: enable Prometheus output (still useful!)
+            - name: PROMETHEUS_ENABLE
+              value: "true"
+
+          # If you decide to connect SDRs directly to a k8s node instead of the Pi,
+          # you'll need hostPath / device mounts and nodeSelectors / tolerations here.
+          volumeMounts: []
+      volumes: []
+      # Optional: pin to a specific node if you ever move SDRs into the cluster
+      # nodeSelector:
+      #   kubernetes.io/hostname: your-sdr-node

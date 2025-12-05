@@ -1,0 +1,17 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: adsb
+
+resources:
+  - namespace.yaml
+  - deployment-ultrafeeder.yaml
+  - service-ultrafeeder.yaml
+  # - dump978-deployment.yaml      # optional, can be commented out
+  # - dump978-service.yaml         # optional, can be commented out
+  - deployment-influxdb.yaml     # optional, comment out if using Prometheus only
+  - service-influxdb.yaml        # optional
+  - pvc-influxdb.yaml            # optional
+
+generators:
+  - ksops.yaml

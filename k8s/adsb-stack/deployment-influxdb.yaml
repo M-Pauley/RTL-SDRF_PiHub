@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: influxdb
+  labels:
+    app: influxdb
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: influxdb
+  template:
+    metadata:
+      labels:
+        app: influxdb
+    spec:
+      containers:
+        - name: influxdb
+          image: influxdb:2
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8086
+          env:
+            - name: DOCKER_INFLUXDB_INIT_MODE
+              value: "setup"
+            - name: DOCKER_INFLUXDB_INIT_BUCKET
+              value: "ultrafeeder"
+            - name: DOCKER_INFLUXDB_INIT_ORG
+              value: "ultrafeeder"
+            - name: DOCKER_INFLUXDB_INIT_RETENTION
+              value: "52w"
+            - name: DOCKER_INFLUXDB_INIT_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: influxdb2-credentials
+                  key: INFLUXDB_USER
+            - name: DOCKER_INFLUXDB_INIT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: influxdb2-credentials
+                  key: INFLUXDB_PASSWORD
+            - name: DOCKER_INFLUXDB_INIT_ADMIN_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: influxdb2-credentials
+                  key: INFLUXDB_ADMIN_TOKEN
+          volumeMounts:
+            - name: influxdb2-data
+              mountPath: /var/lib/influxdb2
+            - name: influxdb2-config
+              mountPath: /etc/influxdb2
+      volumes:
+        - name: influxdb2-data
+          persistentVolumeClaim:
+            claimName: influxdb2-data
+        - name: influxdb2-config
+          persistentVolumeClaim:
+            claimName: influxdb2-config

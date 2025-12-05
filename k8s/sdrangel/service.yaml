@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: sdrangelsrv
+spec:
+  type: ClusterIP
+  selector:
+    app: sdrangelsrv
+  ports:
+    - port: 8091
+      targetPort: 8091
+      name: http-api

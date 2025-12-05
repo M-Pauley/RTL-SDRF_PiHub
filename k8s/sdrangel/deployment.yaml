@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sdrangelsrv
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sdrangelsrv
+  template:
+    metadata:
+      labels:
+        app: sdrangelsrv
+    spec:
+      containers:
+        - name: sdrangelsrv
+          image: f4exb06/sdrangelsrv:latest
+          # If your cluster is not super beefy, add resource limits later.
+          ports:
+            - containerPort: 8091   # REST API
+              name: http-api
+          # Point SDRangel at your rtl_tcp source on the Pi.
+          # Typically you’ll configure the RX device via the REST API / SDRangelCli,
+          # but you can set some defaults via args if you like.
+          # Example: listen on 0.0.0.0:8091 for API.
+          args:
+            - "--address=0.0.0.0"
+            - "--port=8091"
+          env:
+            - name: TZ
+              value: "America/Chicago"
+          # If you want to resolve the Pi by DNS name instead of IP,
+          # make sure cluster DNS can see it, or configure CoreDNS / nodeHosts.
+          # SDRangel talks to rtl_tcp via its own config, so no extra ports here.
