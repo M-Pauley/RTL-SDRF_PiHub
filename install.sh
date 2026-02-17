@@ -112,6 +112,13 @@ EOF
 #######################################
 
 install_readsb() {
+  echo "==> Installing pre-requisets..."
+  apt install -y \
+    libncurses-dev \
+    zlib1g-dev \
+    libzstd-dev \
+    help2man
+
   echo "==> Installing readsb (ADS-B decoder + web map)..."
   echo "This may take a while on a Pi 1."
 
